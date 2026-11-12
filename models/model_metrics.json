@@ -1,0 +1,183 @@
+{
+  "timestamp": "2026-10-22 06:05:13 UTC",
+  "model_architecture": "TF-IDF (unigrams+bigrams) + Logistic Regression (L2)",
+  "train_samples": 101440,
+  "test_samples": 25360,
+  "vocabulary_size": 50000,
+  "accuracy": 0.9247,
+  "macro_precision": 0.9247,
+  "macro_recall": 0.9231,
+  "macro_f1": 0.9238,
+  "class_metrics": {
+    "real": {
+      "label": "Real (0)",
+      "precision": 0.9248,
+      "recall": 0.9391,
+      "f1_score": 0.9319,
+      "support": 13916
+    },
+    "fake": {
+      "label": "Fake (1)",
+      "precision": 0.9245,
+      "recall": 0.9072,
+      "f1_score": 0.9158,
+      "support": 11444
+    }
+  },
+  "confusion_matrix": {
+    "true_real": 13068,
+    "false_fake": 848,
+    "false_real": 1062,
+    "true_fake": 10382,
+    "matrix": [
+      [
+        13068,
+        848
+      ],
+      [
+        1062,
+        10382
+      ]
+    ]
+  },
+  "top_features": {
+    "indicative_of_real": [
+      {
+        "feature": "breitbart",
+        "weight": 19.4718
+      },
+      {
+        "feature": "reuters",
+        "weight": 17.714
+      },
+      {
+        "feature": "york times",
+        "weight": 11.4633
+      },
+      {
+        "feature": "washington reuters",
+        "weight": 6.9152
+      },
+      {
+        "feature": "said",
+        "weight": 6.8039
+      },
+      {
+        "feature": "follow",
+        "weight": 6.7671
+      },
+      {
+        "feature": "new york",
+        "weight": 6.6169
+      },
+      {
+        "feature": "york",
+        "weight": 6.5326
+      },
+      {
+        "feature": "president donald",
+        "weight": 6.291
+      },
+      {
+        "feature": "factbox",
+        "weight": 6.2266
+      },
+      {
+        "feature": "says",
+        "weight": 6.144
+      },
+      {
+        "feature": "ms",
+        "weight": 5.5451
+      },
+      {
+        "feature": "times",
+        "weight": 5.1174
+      },
+      {
+        "feature": "mr",
+        "weight": 4.7655
+      },
+      {
+        "feature": "islamic state",
+        "weight": 4.6932
+      }
+    ],
+    "indicative_of_fake": [
+      {
+        "feature": "video",
+        "weight": 18.0999
+      },
+      {
+        "feature": "image",
+        "weight": 10.7888
+      },
+      {
+        "feature": "featured image",
+        "weight": 10.6214
+      },
+      {
+        "feature": "featured",
+        "weight": 9.9352
+      },
+      {
+        "feature": "breaking",
+        "weight": 9.9056
+      },
+      {
+        "feature": "just",
+        "weight": 8.8307
+      },
+      {
+        "feature": "watch",
+        "weight": 8.5623
+      },
+      {
+        "feature": "hillary",
+        "weight": 8.4374
+      },
+      {
+        "feature": "getty",
+        "weight": 7.1473
+      },
+      {
+        "feature": "october",
+        "weight": 6.9659
+      },
+      {
+        "feature": "getty images",
+        "weight": 6.8343
+      },
+      {
+        "feature": "images",
+        "weight": 6.8054
+      },
+      {
+        "feature": "read",
+        "weight": 6.4972
+      },
+      {
+        "feature": "com",
+        "weight": 6.1987
+      },
+      {
+        "feature": "twitter com",
+        "weight": 6.0714
+      }
+    ]
+  },
+  "training_time_seconds": 52.67,
+  "evaluation_time_seconds": 14.29,
+  "dataset_statistics": {
+    "raw_rows": 72134,
+    "cleaned_rows": 63668,
+    "total_training_samples": 126800,
+    "removed_rows": 8466,
+    "duplicates_removed": 8458,
+    "class_distribution": {
+      "real_count": 69579,
+      "fake_count": 57221
+    },
+    "load_time_seconds": 2.39
+  }
+}

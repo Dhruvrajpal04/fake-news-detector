@@ -1,0 +1,3 @@
+# This directory stores local datasets and SQLite databases.
+# Large dataset CSV files (e.g. WELFake_Dataset.csv) and SQLite databases (*.db) are ignored by git.
+# Run 'python download_dataset.py' to download the official dataset if retraining.

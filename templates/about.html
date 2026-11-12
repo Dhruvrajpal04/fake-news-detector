@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}About &amp; Methodology | FakeNewsLens{% endblock %}
+
+{% block content %}
+<div class="card-header" style="margin-bottom: 2rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem;">
+  <div>
+    <h1 style="font-size: 2rem; color: var(--navy-primary); font-weight: 800;">
+      About, Methodology &amp; Viva Guide
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+      Theoretical foundations, dataset provenance, mathematical formulation, and technical questions for academic defense.
+    </p>
+  </div>
+</div>
+
+<!-- Section 1: Project Objective -->
+<div class="card">
+  <h2 class="card-title">1. Project Objective &amp; Core Philosophy</h2>
+  <p style="margin-top: 0.75rem; line-height: 1.7;">
+    The primary goal of this application is to analyze news articles using genuine machine learning methods
+    and predict whether their syntactic and lexical structure closely resembles verified journalism or fabricated
+    stories in standard benchmark research datasets.
+  </p>
+  <div class="alert alert-warning" style="margin-top: 1rem;">
+    <div style="font-size: 1.5rem;">&#9888;&#65039;</div>
+    <div>
+      <strong>Linguistic Style vs. Factual Ground Truth:</strong>
+      A machine learning NLP model evaluates <em>how</em> a story is written, not <em>whether</em> the real-world events described actually happened.
+      True news written in an eccentric tone may resemble fake news, while polished propaganda written in standard journalistic English may deceive the classifier.
+      The model never connects to external fact databases or proves factual truth.
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: Mathematical Foundation -->
+<div class="card">
+  <h2 class="card-title">2. Mathematical Formulation</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+    <div style="background: var(--blue-soft-bg); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid #bfdbfe;">
+      <h3 style="color: var(--navy-primary); font-size: 1.05rem; margin-bottom: 0.5rem;">A. TF-IDF Vectorization</h3>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+        Converts text tokens and bigrams into numerical importance weights:
+      </p>
+      <div style="background: #ffffff; padding: 0.75rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; line-height: 1.6;">
+        TF(t, d) = 1 + log(f<sub>t,d</sub>)  [sublinear TF]<br><br>
+        IDF(t, D) = log((1 + |D|) / (1 + |{d &in; D : t &in; d}|)) + 1<br><br>
+        TF-IDF(t, d, D) = TF(t, d) &times; IDF(t, D)
+      </div>
+      <p style="font-size: 0.84rem; margin-top: 0.75rem; color: var(--text-muted);">
+        Penalizes ubiquitously frequent English words (e.g., "said", "the", "report") while emphasizing distinctive, topical vocabulary.
+      </p>
+    </div>
+
+    <div style="background: var(--blue-soft-bg); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid #bfdbfe;">
+      <h3 style="color: var(--navy-primary); font-size: 1.05rem; margin-bottom: 0.5rem;">B. Logistic Regression Classifier</h3>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+        Maps high-dimensional sparse TF-IDF vectors into a posterior probability:
+      </p>
+      <div style="background: #ffffff; padding: 0.75rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; line-height: 1.6;">
+        z = <strong>w</strong><sup>T</sup> <strong>x</strong> + b<br><br>
+        P(Real | <strong>x</strong>) = &sigma;(z) = 1 / (1 + e<sup>-z</sup>)<br><br>
+        Loss = -[y log(&sigma;(z)) + (1-y) log(1-&sigma;(z))] + (&lambda;/2) ||<strong>w</strong>||<sup>2</sup>
+      </div>
+      <p style="font-size: 0.84rem; margin-top: 0.75rem; color: var(--text-muted);">
+        L2 regularization prevents overfitting on rare n-grams. The sigmoid &sigma;(z) outputs calibrated probabilities.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Dataset Documentation -->
+<div class="card">
+  <h2 class="card-title">3. Dataset Provenance &amp; Licensing</h2>
+  <table class="styled-table" style="margin-top: 1rem;">
+    <tbody>
+      <tr>
+        <td style="width: 25%;"><strong>Dataset Title</strong></td>
+        <td>WELFake: Word Embedding over Linguistic Features for Fake News Detection</td>
+      </tr>
+      <tr>
+        <td><strong>Primary Authors</strong></td>
+        <td>Pawan Kumar Verma, Prateek Agrawal, Radu Prodan</td>
+      </tr>
+      <tr>
+        <td><strong>Academic Citation</strong></td>
+        <td>IEEE Transactions on Computational Social Systems (2021), DOI: 10.1109/TCSS.2021.3068519</td>
+      </tr>
+      <tr>
+        <td><strong>Zenodo Record</strong></td>
+        <td><a href="https://zenodo.org/records/4561253" target="_blank" rel="noopener noreferrer" style="color: var(--blue-accent);">Record ID 4561253 &nearr;</a></td>
+      </tr>
+      <tr>
+        <td><strong>Legal License</strong></td>
+        <td>Creative Commons Attribution 4.0 International (CC BY 4.0) — Permitted for academic, educational, and commercial use.</td>
+      </tr>
+      <tr>
+        <td><strong>Dataset Composition</strong></td>
+        <td>72,134 news articles merged from 4 established sources (Reuters, BuzzFeed Political, McIntire, Kaggle) to prevent overfitting.</td>
+      </tr>
+      <tr>
+        <td><strong>Label Mapping</strong></td>
+        <td><code>0 = Fake News</code>, <code>1 = Real News</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Section 4: College Viva Q&A -->
+<div class="card">
+  <h2 class="card-title">4. College Viva &amp; Technical Defense Q&amp;A</h2>
+  <div style="display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1rem;">
+    <div style="border-left: 3px solid var(--blue-accent); padding-left: 1rem;">
+      <h4 style="color: var(--navy-primary); font-size: 1rem;">Q1: Why did you choose TF-IDF with Logistic Regression instead of CountVectorizer or Naive Bayes?</h4>
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">
+        CountVectorizer treats all words proportionally to their raw count, allowing frequent boilerplate words to dominate the feature space.
+        TF-IDF scales down universally common terms and highlights domain-specific markers.
+        Logistic Regression handles high-dimensional sparse representations (50,000 n-grams) gracefully with L2 regularization and produces calibrated, smooth probability outputs compared to Multinomial Naive Bayes, which suffers from independence assumptions.
+      </p>
+    </div>
+
+    <div style="border-left: 3px solid var(--blue-accent); padding-left: 1rem;">
+      <h4 style="color: var(--navy-primary); font-size: 1rem;">Q2: How is data leakage prevented between training and testing?</h4>
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">
+        Data leakage occurs when information from outside the training dataset is used to create the model.
+        In this pipeline, <code>train_test_split</code> is performed strictly <em>before</em> any vectorizer fitting.
+        The TF-IDF vectorizer vocabulary and IDF weights are computed exclusively on <code>X_train</code> using a Scikit-Learn <code>Pipeline</code>.
+        The test set is treated as unseen holdout data, ensuring the reported test accuracy is completely unbiased.
+      </p>
+    </div>
+
+    <div style="border-left: 3px solid var(--blue-accent); padding-left: 1rem;">
+      <h4 style="color: var(--navy-primary); font-size: 1rem;">Q3: Why not deploy a 10-billion parameter Large Language Model (LLM) or BERT for this?</h4>
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">
+        For a production or college-level deployment, TF-IDF + Logistic Regression delivers sub-millisecond inference time on CPU with zero GPU dependencies, requires negligible RAM (~20 MB vs &gt;8 GB), and provides transparent mathematical interpretability through direct inspection of feature weights (coefficients).
+      </p>
+    </div>
+
+    <div style="border-left: 3px solid var(--blue-accent); padding-left: 1rem;">
+      <h4 style="color: var(--navy-primary); font-size: 1rem;">Q4: What are the main limitations of this system?</h4>
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">
+        1. <strong>Temporal Drift:</strong> New political events and named entities emerge that were not present in the 2016-2021 training corpus.<br>
+        2. <strong>Adversarial Paraphrasing:</strong> False statements written in formal, dry journalistic language will be classified as "Likely Real" because the model assesses syntax, not facts.<br>
+        3. <strong>Satire and Parody:</strong> Satirical news (such as The Onion) often mimics real journalistic structure intentionally, confusing the classifier.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Section 5: External Verification -->
+<div class="card">
+  <h2 class="card-title">5. Independent Fact-Checking Architecture</h2>
+  <p style="margin-top: 0.75rem; line-height: 1.6;">
+    Because automated classifiers cannot verify physical events, responsible media literacy requires human consultation of verified fact-checking desks:
+  </p>
+  <div class="fact-check-grid" style="margin-top: 1rem;">
+    {% for fc in fact_checkers %}
+    <div class="fc-card">
+      <div>
+        <span class="fc-badge">{{ fc.badge }}</span>
+        <h4 class="fc-title">{{ fc.name }}</h4>
+        <p class="fc-desc">{{ fc.description }}</p>
+      </div>
+      <a href="{{ fc.url }}" target="_blank" rel="noopener noreferrer" class="fc-link">
+        Visit Source &nearr;
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

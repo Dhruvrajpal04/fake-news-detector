@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Model Performance & Analytics Dashboard | FakeNewsLens{% endblock %}
+
+{% block content %}
+<div class="card-header" style="margin-bottom: 2rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem;">
+  <div>
+    <h1 style="font-size: 2rem; color: var(--navy-primary); font-weight: 800;">
+      Model Performance & Analytics Dashboard
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+      Quantitative evaluation of the TF-IDF + Logistic Regression pipeline on the WELFake benchmark test set, combined with live query audit statistics.
+    </p>
+  </div>
+</div>
+
+{% if not metrics %}
+<div class="alert alert-info">
+  <div style="font-size: 1.5rem;">&#8505;&#65039;</div>
+  <div>
+    <strong>No Trained Model Metrics Found:</strong>
+    Evaluation metrics will appear once you run the training script.
+    <p style="margin-top: 0.25rem; font-size: 0.88rem;">
+      Execute <code style="font-weight: 600;">python train_model.py</code> to train the classifier and generate performance metrics.
+    </p>
+  </div>
+</div>
+{% endif %}
+
+<!-- Key Performance Indicators -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Model Accuracy</div>
+    <div class="stat-value">
+      {% if metrics %}{{ (metrics.accuracy * 100)|round(1) }}%{% else %}--{% endif %}
+    </div>
+    <div class="stat-sub">Holdout test evaluation</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Macro F1-Score</div>
+    <div class="stat-value">
+      {% if metrics %}{{ (metrics.macro_f1 * 100)|round(1) }}%{% else %}--{% endif %}
+    </div>
+    <div class="stat-sub">Balanced harmonic mean</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">WELFake Training Corpus</div>
+    <div class="stat-value">
+      {% if metrics %}{{ "{:,}".format(metrics.train_samples) }}{% else %}--{% endif %}
+    </div>
+    <div class="stat-sub">Articles fitted (80% split)</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">User Queries Analyzed</div>
+    <div class="stat-value">
+      {{ history_stats.total_queries }}
+    </div>
+    <div class="stat-sub">Saved in local SQLite DB</div>
+  </div>
+</div>
+
+<!-- Charts Section -->
+<div class="charts-grid">
+  <!-- Chart 1: Per-Class Precision, Recall, F1 -->
+  <div class="chart-card">
+    <h3>Per-Class Performance Metrics (Test Set)</h3>
+    <div class="chart-wrapper">
+      <canvas id="metricsBarChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 2: Confusion Matrix Heatmap -->
+  <div class="chart-card">
+    <h3>Confusion Matrix Breakdown</h3>
+    <div class="chart-wrapper">
+      <canvas id="confusionMatrixChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 3: Top Real vs Fake Linguistic Features -->
+  <div class="chart-card" style="grid-column: 1 / -1;">
+    <h3>Top Informative N-Grams by Logistic Regression Coefficient</h3>
+    <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+      Positive coefficients push predictions toward <em>Likely Real</em>, while negative coefficients push predictions toward <em>Likely Fake</em>.
+    </p>
+    <div class="chart-wrapper" style="height: 340px;">
+      <canvas id="featuresBarChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 4: Historical Queries Distribution -->
+  <div class="chart-card">
+    <h3>Database Queries Class Ratio</h3>
+    <div class="chart-wrapper">
+      <canvas id="historyPieChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Model Specifications Table -->
+  <div class="chart-card">
+    <h3>Pipeline Specifications</h3>
+    <table class="styled-table" style="font-size: 0.88rem;">
+      <tbody>
+        <tr>
+          <td><strong>Vectorization</strong></td>
+          <td>TF-IDF (1-gram & 2-gram, sublinear TF)</td>
+        </tr>
+        <tr>
+          <td><strong>Max Vocabulary</strong></td>
+          <td>{% if metrics %}{{ "{:,}".format(metrics.vocabulary_size) }}{% else %}50,000{% endif %} features</td>
+        </tr>
+        <tr>
+          <td><strong>Classifier</strong></td>
+          <td>Logistic Regression (L2 penalty, C=1.0)</td>
+        </tr>
+        <tr>
+          <td><strong>Leakage Prevention</strong></td>
+          <td>Strict Stratified Train/Test Split (80/20)</td>
+        </tr>
+        <tr>
+          <td><strong>Benchmark Dataset</strong></td>
+          <td>WELFake (Zenodo Record 4561253)</td>
+        </tr>
+        <tr>
+          <td><strong>Training Timestamp</strong></td>
+          <td>{% if metrics %}{{ metrics.timestamp }}{% else %}Not trained{% endif %}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Embedded JSON Data for Chart Rendering -->
+<script id="metricsData" type="application/json">
+  {{ (metrics or {})|tojson }}
+</script>
+<script id="historyStatsData" type="application/json">
+  {{ history_stats|tojson }}
+</script>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Render Dashboard Charts
+  document.addEventListener("DOMContentLoaded", function () {
+    const metricsRaw = document.getElementById("metricsData").textContent;
+    const historyRaw = document.getElementById("historyStatsData").textContent;
+    const metrics = JSON.parse(metricsRaw || "{}");
+    const historyStats = JSON.parse(historyRaw || "{}");
+
+    // Chart 1: Per-Class Performance
+    const metricsCtx = document.getElementById("metricsBarChart");
+    if (metricsCtx && metrics.class_metrics) {
+      new Chart(metricsCtx, {
+        type: "bar",
+        data: {
+          labels: ["Precision", "Recall", "F1-Score"],
+          datasets: [
+            {
+              label: "Likely Fake (0)",
+              data: [
+                metrics.class_metrics.fake.precision * 100,
+                metrics.class_metrics.fake.recall * 100,
+                metrics.class_metrics.fake.f1_score * 100,
+              ],
+              backgroundColor: "rgba(220, 38, 38, 0.8)",
+              borderColor: "#dc2626",
+              borderWidth: 1,
+            },
+            {
+              label: "Likely Real (1)",
+              data: [
+                metrics.class_metrics.real.precision * 100,
+                metrics.class_metrics.real.recall * 100,
+                metrics.class_metrics.real.f1_score * 100,
+              ],
+              backgroundColor: "rgba(5, 150, 105, 0.8)",
+              borderColor: "#059669",
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { callback: (v) => v + "%" },
+            },
+          },
+        },
+      });
+    }
+
+    // Chart 2: Confusion Matrix
+    const cmCtx = document.getElementById("confusionMatrixChart");
+    if (cmCtx && metrics.confusion_matrix) {
+      const cm = metrics.confusion_matrix;
+      new Chart(cmCtx, {
+        type: "doughnut",
+        data: {
+          labels: [
+            `True Fake (TN): ${cm.true_fake.toLocaleString()}`,
+            `True Real (TP): ${cm.true_real.toLocaleString()}`,
+            `False Fake (FN): ${cm.false_fake.toLocaleString()}`,
+            `False Real (FP): ${cm.false_real.toLocaleString()}`,
+          ],
+          datasets: [
+            {
+              data: [cm.true_fake, cm.true_real, cm.false_fake, cm.false_real],
+              backgroundColor: [
+                "#dc2626",
+                "#059669",
+                "#f59e0b",
+                "#3b82f6",
+              ],
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "right" },
+          },
+        },
+      });
+    }
+
+    // Chart 3: Top Linguistic Features
+    const featCtx = document.getElementById("featuresBarChart");
+    if (featCtx && metrics.top_features) {
+      const realFeats = metrics.top_features.indicative_of_real.slice(0, 8);
+      const fakeFeats = metrics.top_features.indicative_of_fake.slice(0, 8);
+
+      const labels = [
+        ...fakeFeats.map((f) => `[Fake] "${f.feature}"`),
+        ...realFeats.map((f) => `[Real] "${f.feature}"`),
+      ];
+      const data = [
+        ...fakeFeats.map((f) => -f.weight),
+        ...realFeats.map((f) => f.weight),
+      ];
+      const colors = [
+        ...fakeFeats.map(() => "#dc2626"),
+        ...realFeats.map(() => "#059669"),
+      ];
+
+      new Chart(featCtx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Logistic Regression Coefficient (+Real / -Fake)",
+              data: data,
+              backgroundColor: colors,
+            },
+          ],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: { display: true, text: "Feature Weight (Log-Odds Impact)" },
+            },
+          },
+        },
+      });
+    }
+
+    // Chart 4: Queries History Ratio
+    const histCtx = document.getElementById("historyPieChart");
+    if (histCtx) {
+      const fakes = historyStats.fake_detected || 0;
+      const reals = historyStats.real_detected || 0;
+      new Chart(histCtx, {
+        type: "pie",
+        data: {
+          labels: [`Fake: ${fakes}`, `Real: ${reals}`],
+          datasets: [
+            {
+              data: [fakes, reals],
+              backgroundColor: ["#dc2626", "#059669"],
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+        },
+      });
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Fake News Detection System | ML-Powered Text Classifier{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="{{ url_for('index') }}" class="brand-link">
+        <div class="brand-icon">FN</div>
+        <span>FakeNewsLens</span>
+        <span class="brand-tag">WELFake ML</span>
+      </a>
+
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
+
+      <nav>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Detect News</a></li>
+          <li><a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a></li>
+          <li><a href="{{ url_for('history') }}" class="nav-link {% if request.endpoint == 'history' %}active{% endif %}">History</a></li>
+          <li><a href="{{ url_for('about') }}" class="nav-link {% if request.endpoint == 'about' %}active{% endif %}">About & Methodology</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Header Block (Overridden by child templates if needed) -->
+  {% block hero %}
+  {% endblock %}
+
+  <!-- Main Body Content -->
+  <main class="main-content">
+    <div class="container">
+      {% if error_title %}
+      <div class="card" style="text-align: center; padding: 3rem 1.5rem;">
+        <h2 style="color: var(--color-fake); margin-bottom: 0.5rem;">{{ error_title }}</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">{{ error_msg }}</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Return to Detector</a>
+      </div>
+      {% else %}
+        {% block content %}{% endblock %}
+      {% endif %}
+    </div>
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>About This Project</h4>
+          <p>
+            An academic Fake News Detection System utilizing a Scikit-Learn TF-IDF vectorizer and Logistic Regression
+            classifier trained on the peer-reviewed WELFake dataset (72,000+ benchmark articles).
+          </p>
+          <p style="font-size: 0.8rem; color: #94a3b8;">
+            <strong>Important Notice:</strong> Predictions evaluate linguistic patterns and vocabulary distribution.
+            A prediction of "Likely Real" or "Likely Fake" does <em>not</em> prove factual truth or falsehood.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>External Fact-Checkers</h4>
+          <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 0.5rem;">
+            (Manual verification sources; no live fact API)
+          </p>
+          <ul class="footer-links">
+            <li><a href="https://www.reuters.com/fact-check/" target="_blank" rel="noopener noreferrer">Reuters Fact Check &nearr;</a></li>
+            <li><a href="https://www.ap.org/verify" target="_blank" rel="noopener noreferrer">AP Verify &nearr;</a></li>
+            <li><a href="https://factcheck.pib.gov.in/" target="_blank" rel="noopener noreferrer">PIB Fact Check (India) &nearr;</a></li>
+            <li><a href="https://www.newschecker.in/" target="_blank" rel="noopener noreferrer">Newschecker India &nearr;</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Dataset & Methodology</h4>
+          <ul class="footer-links">
+            <li><a href="https://zenodo.org/records/4561253" target="_blank" rel="noopener noreferrer">WELFake on Zenodo &nearr;</a></li>
+            <li><a href="https://doi.org/10.1109/TCSS.2021.3068519" target="_blank" rel="noopener noreferrer">IEEE TCSS Publication &nearr;</a></li>
+            <li><a href="{{ url_for('about') }}">Architecture & Limitations</a></li>
+            <li><a href="{{ url_for('dashboard') }}">Model Metrics</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 FakeNewsLens Project. Built with Python, Flask, Scikit-learn, and SQLite. Dataset licensed under CC BY 4.0.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core JavaScript -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

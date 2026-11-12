@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Detect Fake News | ML Linguistic Classifier{% endblock %}
+
+{% block hero %}
+<section class="hero-section">
+  <div class="container hero-content">
+    <div class="hero-badge">Machine Learning Classification Pipeline</div>
+    <h1 class="hero-title">Evaluate News Text Against <span>Trained Linguistic Patterns</span></h1>
+    <p class="hero-subtitle">
+      Powered by a Scikit-Learn TF-IDF and Logistic Regression pipeline trained on the 72,000+ article WELFake dataset.
+      Analyzes stylistic features, lexical choices, and reporting patterns.
+    </p>
+    <div class="hero-notice">
+      <span>&#9888;&#65039;</span>
+      <span>
+        <strong>Responsible AI Disclosure:</strong> This model measures statistical similarity to text styles labeled REAL or FAKE
+        in its training corpus. It <em>does not</em> verify real-world facts or search live news wires. Always verify important news.
+      </span>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+
+{% if not model_ready %}
+<div class="alert alert-warning">
+  <div style="font-size: 1.5rem;">&#9888;&#65039;</div>
+  <div>
+    <strong>Model Artifact Not Detected:</strong>
+    The machine learning pipeline has not been trained yet.
+    <p style="margin-top: 0.35rem; font-size: 0.88rem;">
+      To train the model on the WELFake dataset, execute in your terminal:
+      <code style="background: rgba(0,0,0,0.06); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">python train_model.py</code>
+      (or run <code style="background: rgba(0,0,0,0.06); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">python download_dataset.py</code> first).
+    </p>
+  </div>
+</div>
+{% endif %}
+
+<!-- Detector Form Card -->
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">
+      <span>&#128269;</span> Analyze News Article or Headline
+    </h2>
+    <span class="brand-tag">TF-IDF &bull; Logistic Regression</span>
+  </div>
+  
+  <p class="card-description">
+    Paste a full news article body or headline below. The system will extract n-gram term frequencies and compute the probability of stylistic resemblance to known real vs fake journalism.
+  </p>
+
+  <!-- Quick Sample Loaders -->
+  <div class="sample-bar">
+    <span class="sample-title">&#128161; Load Sample:</span>
+    <button type="button" class="sample-btn" id="sampleRealBtn">Sample Journalistic Report (Real)</button>
+    <button type="button" class="sample-btn" id="sampleFakeBtn">Sample Sensational Claim (Fake)</button>
+    <button type="button" class="sample-btn" id="sampleClickbaitBtn">Sample Conspiracy Rumor (Fake)</button>
+  </div>
+
+  <form id="detectForm" class="detector-form" style="margin-top: 1rem;">
+    <div class="form-group">
+      <div class="form-label">
+        <label for="newsText">Article Headline & Body Content <span style="color: var(--color-fake);">*</span></label>
+        <span class="char-counter" id="charCounter">0 characters | 0 words</span>
+      </div>
+      <textarea
+        id="newsText"
+        name="text"
+        class="form-textarea"
+        placeholder="Paste complete news headline or article body here (minimum 15 characters)..."
+        required
+      ></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="sourceUrl" class="form-label">
+        Optional Source URL
+        <span style="font-weight: normal; font-size: 0.8rem; color: var(--text-muted);">(for audit trail/history tracking)</span>
+      </label>
+      <input
+        type="url"
+        id="sourceUrl"
+        name="source_url"
+        class="form-input"
+        placeholder="https://example.com/news-story"
+      >
+    </div>
+
+    <!-- Optional Google Fact Check API Settings -->
+    <div class="form-group">
+      <details style="font-size: 0.85rem; color: var(--navy-secondary); cursor: pointer;">
+        <summary style="font-weight: 600;">&#9881;&#65039; Optional: Google Fact Check Tools API Key</summary>
+        <div style="margin-top: 0.5rem; background: var(--blue-soft-bg); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid #bfdbfe;">
+          <label for="googleApiKey" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.25rem; color: var(--navy-primary);">
+            Google Cloud API Key
+          </label>
+          <input
+            type="password"
+            id="googleApiKey"
+            name="google_api_key"
+            class="form-input"
+            placeholder="Paste free Google Fact Check API key (optional)..."
+            style="font-size: 0.85rem; padding: 0.45rem 0.65rem;"
+          >
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.35rem;">
+            If omitted, the system automatically uses real-time live news wire search with no key required.
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <div id="errorAlert" class="alert alert-danger" style="display: none;"></div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" id="analyzeBtn" {% if not model_ready %}disabled{% endif %}>
+        <span id="btnSpinner" class="spinner" style="display: none;"></span>
+        <span id="btnIcon">&#129302;</span>
+        <span id="btnText">Analyze News</span>
+      </button>
+
+      <button type="button" class="btn btn-secondary" id="clearBtn">
+        Clear Text
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Prediction Results Panel -->
+<div id="resultPanel" class="result-card">
+  <div class="result-header">
+    <div>
+      <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;">Classification Result</span>
+      <div style="margin-top: 0.25rem;">
+        <span id="resultBadge" class="badge-label">
+          <span id="badgeIcon"></span>
+          <span id="badgeText">Evaluating...</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="confidence-box">
+      <div class="confidence-val" id="confidenceValue">--%</div>
+      <div class="confidence-caption">Model Score</div>
+    </div>
+  </div>
+
+  <!-- Confidence Breakdown Meter -->
+  <div class="meter-wrapper">
+    <div class="meter-track">
+      <div id="meterReal" class="meter-fill-real" style="width: 50%;"></div>
+      <div id="meterFake" class="meter-fill-fake" style="width: 50%;"></div>
+    </div>
+    <div class="meter-labels">
+      <span class="real-text">Real Resemblance: <strong id="realProbText">50%</strong></span>
+      <span class="fake-text">Fake Resemblance: <strong id="fakeProbText">50%</strong></span>
+    </div>
+  </div>
+
+  <!-- Model Explanation -->
+  <div class="result-explanation">
+    <h4><span>&#128172;</span> Stylistic Feature Analysis</h4>
+    <p id="explanationText"></p>
+    <div style="margin-top: 0.6rem; font-size: 0.82rem; color: var(--text-muted);">
+      <strong>Evaluated Snippet:</strong> <em id="snippetText"></em>
+    </div>
+  </div>
+
+  <!-- Live News Wire & Fact-Check Cross-Reference Section -->
+  <div id="liveVerificationSection" style="margin-top: 1.5rem;">
+    <h3 style="font-size: 1.15rem; color: var(--navy-primary); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5rem;">
+      <span>&#127760;</span> Real-World Fact-Check &amp; Live News Wire Cross-Reference
+    </h3>
+
+    <!-- Google Fact Check API Results Container -->
+    <div id="googleFactCheckContainer" style="display: none; margin-bottom: 1rem;">
+      <div style="background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: var(--radius-sm); padding: 1.1rem;">
+        <h4 style="font-size: 0.95rem; color: #1e40af; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
+          <span>&#10004;</span> Verified Fact-Check Match Found (Google Fact Check Tools API)
+        </h4>
+        <div id="googleFactCheckList"></div>
+      </div>
+    </div>
+
+    <!-- Live Google News Wire Match Container -->
+    <div id="liveNewsWireContainer" style="display: none; margin-bottom: 1rem;">
+      <div style="background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.1rem;">
+        <h4 style="font-size: 0.95rem; color: var(--navy-primary); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
+          <span>&#128240;</span> Mainstream News Wire Coverage (Google News Live Search)
+        </h4>
+        <div id="liveNewsWireList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+      </div>
+    </div>
+
+    <!-- No Live Coverage Found Notice -->
+    <div id="noLiveNewsNotice" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 0.85rem 1rem; font-size: 0.86rem; color: #92400e; margin-bottom: 1rem;">
+      <strong>Zero Mainstream News Coverage Found:</strong> If this statement claims to be major breaking news, the complete absence of coverage across verified journalistic wires (Reuters, AP, The Hindu, NDTV) indicates a high probability of an uncorroborated social media rumor.
+    </div>
+  </div>
+
+  <!-- Mandatory Truth Warning -->
+  <div class="result-disclaimer">
+    <div style="font-size: 1.3rem;">&#9888;&#65039;</div>
+    <div>
+      <strong>Critical Verification Notice:</strong>
+      <span id="disclaimerText">
+        This prediction is purely a statistical text classification based on n-grams and vocabulary frequency in the WELFake training corpus.
+        It does NOT verify whether claims actually occurred in reality.
+      </span>
+    </div>
+  </div>
+
+  <!-- External Fact-Checking Guidance -->
+  <div style="margin-top: 2rem;">
+    <h3 style="font-size: 1.15rem; color: var(--navy-primary); margin-bottom: 0.4rem;">
+      &#128270; Independent Fact-Checking Sources
+    </h3>
+    <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+      Never rely solely on an automated model. Cross-reference the claims in this article directly with these established fact-check organizations:
+    </p>
+
+    <div class="fact-check-grid">
+      {% for fc in fact_checkers %}
+      <div class="fc-card">
+        <div>
+          <span class="fc-badge">{{ fc.badge }}</span>
+          <h4 class="fc-title">{{ fc.name }}</h4>
+          <p class="fc-desc">{{ fc.description }}</p>
+        </div>
+        <a href="{{ fc.url }}" target="_blank" rel="noopener noreferrer" class="fc-link">
+          Open Fact Check &rarr;
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Run Fake News Web App",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/app.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: Train Model (WELFake)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/train_model.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: Download WELFake Dataset",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/download_dataset.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

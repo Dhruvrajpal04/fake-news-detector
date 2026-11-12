@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction Audit History | FakeNewsLens{% endblock %}
+
+{% block content %}
+<div class="card-header" style="margin-bottom: 2rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem;">
+  <div>
+    <h1 style="font-size: 2rem; color: var(--navy-primary); font-weight: 800;">
+      Prediction Audit History
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+      Chronological audit log of evaluated articles stored in the local SQLite database.
+    </p>
+  </div>
+
+  {% if records %}
+  <div>
+    <button type="button" class="btn btn-danger btn-sm" id="clearAllBtn">
+      &#128465; Clear All History
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Privacy Notice -->
+<div class="alert alert-info" style="margin-bottom: 1.5rem;">
+  <div style="font-size: 1.3rem;">&#128274;</div>
+  <div>
+    <strong>Local Privacy Notice:</strong>
+    All evaluated articles and model scores are stored strictly in a local SQLite file (<code>data/predictions.db</code>) on your computer.
+    No queries are transmitted to third-party tracking services or cloud servers. You can clear this history anytime.
+  </div>
+</div>
+
+{% if not records %}
+<div class="card" style="text-align: center; padding: 3.5rem 1.5rem;">
+  <div style="font-size: 3rem; margin-bottom: 0.75rem;">&#128196;</div>
+  <h3 style="color: var(--navy-primary); margin-bottom: 0.5rem;">No Predictions Recorded Yet</h3>
+  <p style="color: var(--text-muted); max-width: 450px; margin: 0 auto 1.5rem;">
+    Submit your first news article or headline on the detection page to start tracking predictions here.
+  </p>
+  <a href="{{ url_for('index') }}" class="btn btn-primary">Start New Analysis</a>
+</div>
+{% else %}
+
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="table-responsive">
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Date &amp; Time (UTC)</th>
+          <th>Article Snippet</th>
+          <th>Classification</th>
+          <th>Model Score</th>
+          <th>Source Link</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in records %}
+        <tr id="row-{{ row.id }}">
+          <td>#{{ row.id }}</td>
+          <td style="white-space: nowrap; font-size: 0.85rem; color: var(--text-muted);">
+            {{ row.created_at }}
+          </td>
+          <td style="max-width: 320px;">
+            <div style="font-weight: 500; color: var(--navy-primary); margin-bottom: 0.25rem;">
+              {{ row.text_snippet }}
+            </div>
+            <button
+              type="button"
+              class="btn-sm btn-secondary view-full-btn"
+              data-text="{{ row.full_text|e }}"
+              data-id="{{ row.id }}"
+              data-label="{{ row.prediction_label }}"
+              data-conf="{{ row.confidence }}"
+              data-url="{{ row.source_url or '' }}"
+              style="font-size: 0.75rem; padding: 0.15rem 0.5rem; cursor: pointer;"
+            >
+              View Full Text
+            </button>
+          </td>
+          <td>
+            {% if row.prediction_label == 'Likely Real' %}
+              <span class="history-badge real">&#9989; Likely Real</span>
+            {% else %}
+              <span class="history-badge fake">&#10060; Likely Fake</span>
+            {% endif %}
+          </td>
+          <td>
+            <strong>{{ row.confidence }}%</strong>
+          </td>
+          <td>
+            {% if row.source_url %}
+              <a href="{{ row.source_url }}" target="_blank" rel="noopener noreferrer" style="color: var(--blue-accent); text-decoration: none; font-size: 0.82rem;">
+                Visit Link &nearr;
+              </a>
+            {% else %}
+              <span style="color: var(--text-light); font-size: 0.82rem;">None</span>
+            {% endif %}
+          </td>
+          <td>
+            <button
+              type="button"
+              class="btn btn-danger btn-sm delete-btn"
+              data-id="{{ row.id }}"
+              title="Delete record"
+              style="padding: 0.25rem 0.6rem; font-size: 0.8rem;"
+            >
+              &#128465;
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endif %}
+
+<!-- Full Text Inspector Modal -->
+<div id="textModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalTitle">Article Details</h3>
+      <button type="button" class="modal-close" id="modalCloseBtn">&times;</button>
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <span id="modalBadge" class="history-badge"></span>
+      <span style="font-size: 0.88rem; color: var(--text-muted); margin-left: 0.5rem;">
+        Confidence: <strong id="modalConfidence"></strong>
+      </span>
+      <span id="modalUrlWrapper" style="margin-left: 0.75rem; font-size: 0.88rem;"></span>
+    </div>
+    <div style="background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem; max-height: 50vh; overflow-y: auto; white-space: pre-wrap; font-family: inherit; font-size: 0.92rem;" id="modalBodyText">
+    </div>
+    <div style="margin-top: 1.25rem; text-align: right;">
+      <button type="button" class="btn btn-secondary" id="modalDoneBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // History Page Handlers
+  document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("textModal");
+    const modalCloseBtn = document.getElementById("modalCloseBtn");
+    const modalDoneBtn = document.getElementById("modalDoneBtn");
+    const modalBodyText = document.getElementById("modalBodyText");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalBadge = document.getElementById("modalBadge");
+    const modalConfidence = document.getElementById("modalConfidence");
+    const modalUrlWrapper = document.getElementById("modalUrlWrapper");
+
+    // Open Modal
+    document.querySelectorAll(".view-full-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        const fullText = btn.getAttribute("data-text");
+        const label = btn.getAttribute("data-label");
+        const conf = btn.getAttribute("data-conf");
+        const url = btn.getAttribute("data-url");
+
+        modalTitle.textContent = `Article #${id}`;
+        modalBodyText.textContent = fullText;
+        modalBadge.textContent = label;
+        modalBadge.className = `history-badge ${label === "Likely Real" ? "real" : "fake"}`;
+        modalConfidence.textContent = `${conf}%`;
+
+        if (url) {
+          modalUrlWrapper.innerHTML = `| <a href="${url}" target="_blank" rel="noopener noreferrer" style="color: var(--blue-accent);">Source Link &nearr;</a>`;
+        } else {
+          modalUrlWrapper.innerHTML = "";
+        }
+
+        modal.style.display = "flex";
+      });
+    });
+
+    // Close Modal
+    function closeModal() {
+      modal.style.display = "none";
+    }
+    if (modalCloseBtn) modalCloseBtn.addEventListener("click", closeModal);
+    if (modalDoneBtn) modalDoneBtn.addEventListener("click", closeModal);
+    window.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    // Delete Individual Item
+    document.querySelectorAll(".delete-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        if (!confirm(`Are you sure you want to delete prediction #${id}?`)) return;
+
+        try {
+          const res = await fetch(`/api/history/${id}`, { method: "DELETE" });
+          const data = await res.json();
+          if (data.status === "success") {
+            const row = document.getElementById(`row-${id}`);
+            if (row) row.remove();
+          } else {
+            alert(data.message || "Failed to delete record.");
+          }
+        } catch (err) {
+          alert("Error communicating with server.");
+        }
+      });
+    });
+
+    // Clear All History
+    const clearAllBtn = document.getElementById("clearAllBtn");
+    if (clearAllBtn) {
+      clearAllBtn.addEventListener("click", async () => {
+        if (!confirm("Are you sure you want to permanently clear ALL prediction history? This action cannot be undone.")) return;
+
+        try {
+          const res = await fetch("/api/history/clear", { method: "POST" });
+          const data = await res.json();
+          if (data.status === "success") {
+            window.location.reload();
+          } else {
+            alert(data.message || "Failed to clear history.");
+          }
+        } catch (err) {
+          alert("Error communicating with server.");
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

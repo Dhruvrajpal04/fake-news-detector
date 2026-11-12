@@ -1,0 +1,30 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest / Unit test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Dataset & Local Database
+# Note: WELFake_Dataset.csv (~245 MB) exceeds GitHub's 100 MB hard file limit.
+# Download it anytime by running: python download_dataset.py
+data/*.csv
+data/*.db
+data/*.sqlite3
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment variables
+.env
